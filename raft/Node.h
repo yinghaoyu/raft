@@ -1,7 +1,3 @@
-//
-// Created by frank on 18-5-15.
-//
-
 #ifndef RAFT_NODE_H
 #define RAFT_NODE_H
 
@@ -46,26 +42,22 @@ class Node : muduo::noncopyable {
   //
   // wrapper of Raft::RequestVote(), thread safe
   //
-  void RequestVote(const RequestVoteArgs& args,
-                   const RequestVoteDoneCallback& done);
+  void RequestVote(const RequestVoteArgs& args, const RequestVoteDoneCallback& done);
 
   //
   // wrapper of Raft::OnRequestVoteReply(), thread safe
   //
-  void OnRequestVoteReply(int peer, const RequestVoteArgs& args,
-                          const RequestVoteReply& reply);
+  void OnRequestVoteReply(int peer, const RequestVoteArgs& args, const RequestVoteReply& reply);
 
   //
   // wrapper of Raft::AppendEntries(), thread safe
   //
-  void AppendEntries(const AppendEntriesArgs& args,
-                     const AppendEntriesDoneCallback& done);
+  void AppendEntries(const AppendEntriesArgs& args, const AppendEntriesDoneCallback& done);
 
   //
   // Wrapper of Raft::OnAppendEntriesReply(), thread safe
   //
-  void OnAppendEntriesReply(int peer, const AppendEntriesArgs& args,
-                            const AppendEntriesReply& reply);
+  void OnAppendEntriesReply(int peer, const AppendEntriesArgs& args, const AppendEntriesReply& reply);
 
  private:
   //
@@ -100,8 +92,6 @@ class Node : muduo::noncopyable {
 
   std::chrono::milliseconds tickInterval_;
 
-  // jrpc::RpcServer rpcServer_;
-  // RaftService raftService_;
   muduo::net::InetAddress serverAddress_;
   RaftAsyncGrpcServer raftAsyncGrpcServer_;
   muduo::net::EventLoopThread rpcLoopThread_;

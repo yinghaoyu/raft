@@ -52,7 +52,7 @@ cd ../raft-build/Release/bin
 开一个单节点的raft，server端口号是`8090`，虽然这个server没什么用：
 
 ```sh
-stdbuf -oL ./raft_demo 0 8090 | grep 'raft\['
+stdbuf -oL ./raft_demo 0 8090 | grep grep -E 'raft\[[0-9]+\]'
 ```
 
 你可以看到运行的流程，每隔1s，leader就会propose一条log，最后一行是每隔5s输出一次的统计信息：
@@ -76,9 +76,9 @@ stdbuf -oL ./raft_demo 0 8090 | grep 'raft\['
 开3个节点的raft集群，需要起3个进程，server端口号分别是`8090,8091,8092`分别运行：
 
 ```shell
-stdbuf -oL ./raft_demo 0 8090 8091 8092 | grep 'raft\['
-stdbuf -oL ./raft_demo 1 8090 8091 8092 | grep 'raft\['
-stdbuf -oL ./raft_demo 2 8090 8091 8092 | grep 'raft\['
+stdbuf -oL ./raft_demo 0 8090 8091 8092 | grep -E 'raft\[[0-9]+\]'
+stdbuf -oL ./raft_demo 1 8090 8091 8092 | grep -E 'raft\[[0-9]+\]'
+stdbuf -oL ./raft_demo 2 8090 8091 8092 | grep -E 'raft\[[0-9]+\]'
 ```
 
 你可以看到leader election的过程，然后重启一个进程，看看会发生什么？

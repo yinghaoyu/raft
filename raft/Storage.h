@@ -1,7 +1,3 @@
-//
-// Created by frank on 18-5-10.
-//
-
 #ifndef RAFT_STORAGE_H
 #define RAFT_STORAGE_H
 

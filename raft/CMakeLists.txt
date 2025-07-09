@@ -1,7 +1,7 @@
 add_library(raft STATIC
         Raft.cc Raft.h
         RaftPeer.cc RaftPeer.h
-        RaftAsyncGrpcServer.h RaftAsyncGrpcServer.cc
+        RaftAsyncGrpcServer.h
         message.grpc.pb.h message.grpc.pb.cc
         message.pb.h message.pb.cc
         Log.h Log.cc

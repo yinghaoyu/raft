@@ -1,7 +1,3 @@
-//
-// Created by frank on 18-4-19.
-//
-
 #include "Raft.h"
 #include "RaftPeer.h"
 #include "Storage.h"
@@ -25,9 +21,8 @@ Raft::Raft(const Config& c, const std::vector<RaftPeer*>& peers)
       snapshotCallback_(c.snapshotCallback) {
   ResetTimer();
   char buf[128];
-  snprintf(buf, sizeof(buf),
-           "raft[%d] %s, term %d, first_index %d, last_index %d", id_,
-           RoleString(), currentTerm_, log_.FirstIndex(), log_.LastIndex());
+  snprintf(buf, sizeof(buf), "raft[%d] %s, term %d, first_index %d, last_index %d", id_, RoleString(), currentTerm_, log_.FirstIndex(),
+           log_.LastIndex());
   LOG_DEBUG << buf;
 }
 
@@ -41,10 +36,11 @@ ProposeResult Raft::Propose(const Json::Value& command) {
   bool isLeader = (role_ == kLeader);
 
   if (isLeader) {
+    // NOTICE: not commit yet, just appended
+    // the command will be committed once AppendEntries RPCs are sent to majority of peers
     log_.Append(currentTerm_, command);
     char buf[128];
-    snprintf(buf, sizeof(buf), "raft[%d] %s, term %d, propose log %d", id_,
-             RoleString(), currentTerm_, index);
+    snprintf(buf, sizeof(buf), "raft[%d] %s, term %d, propose log %d", id_, RoleString(), currentTerm_, index);
     LOG_DEBUG << buf;
   }
 
@@ -78,9 +74,10 @@ void Raft::RequestVote(const RequestVoteArgs& args, RequestVoteReply& reply) {
 
   reply.term = currentTerm_;
 
-  if (args.term == currentTerm_ &&
-      (votedFor_ == kVotedForNull || votedFor_ == args.candidateId) &&
-      log_.IsUpToDate(args.lastLogIndex, args.lastLogTerm)) {
+  if (args.term == currentTerm_ &&                                      // FIXME: should be >= ?
+      (votedFor_ == kVotedForNull || votedFor_ == args.candidateId) &&  // not voted or already voted
+      log_.IsUpToDate(args.lastLogIndex, args.lastLogTerm))             // other candidate newer than this node can be voteGranted.
+  {
     char buf[128];
     snprintf(buf, sizeof(buf), "raft[%d] -> raft[%d]", id_, args.candidateId);
     LOG_DEBUG << buf;
@@ -91,8 +88,7 @@ void Raft::RequestVote(const RequestVoteArgs& args, RequestVoteReply& reply) {
   }
 }
 
-void Raft::OnRequestVoteReply(int peer, const RequestVoteArgs& args,
-                              const RequestVoteReply& reply) {
+void Raft::OnRequestVoteReply(int peer, const RequestVoteArgs& args, const RequestVoteReply& reply) {
   OnNewInputTerm(reply.term);
 
   if (role_ != kCandidate ||      // not a candidate anymore
@@ -127,8 +123,7 @@ void Raft::StartAppendEntries() {
   }
 }
 
-void Raft::AppendEntries(const AppendEntriesArgs& args,
-                         AppendEntriesReply& reply) {
+void Raft::AppendEntries(const AppendEntriesArgs& args, AppendEntriesReply& reply) {
   OnNewInputTerm(args.term);
   ResetTimer();
 
@@ -142,6 +137,7 @@ void Raft::AppendEntries(const AppendEntriesArgs& args,
     // lose leader election
     ToFollower(currentTerm_);
   } else if (role_ == kLeader) {
+    // split brain happened?
     char buf[128];
     snprintf(buf, sizeof(buf), "multiple leaders in term %d", currentTerm_);
     LOG_FATAL << buf;
@@ -172,8 +168,7 @@ void Raft::AppendEntries(const AppendEntriesArgs& args,
   }
 }
 
-void Raft::OnAppendEntriesReply(int peer, const AppendEntriesArgs& args,
-                                const AppendEntriesReply& reply) {
+void Raft::OnAppendEntriesReply(int peer, const AppendEntriesArgs& args, const AppendEntriesReply& reply) {
   OnNewInputTerm(reply.term);
 
   if (role_ != kLeader || currentTerm_ > reply.term) {
@@ -205,9 +200,7 @@ void Raft::OnAppendEntriesReply(int peer, const AppendEntriesArgs& args,
     }
     if (nextIndex <= matchIndex_[peer]) {
       char buf[128];
-      snprintf(buf, sizeof(buf),
-               "raft[%d] %s, nextIndex <= matchIndex_[%d], set to %d", id_,
-               RoleString(), peer, matchIndex_[peer] + 1);
+      snprintf(buf, sizeof(buf), "raft[%d] %s, nextIndex <= matchIndex_[%d], set to %d", id_, RoleString(), peer, matchIndex_[peer] + 1);
       LOG_DEBUG << buf;
       nextIndex = matchIndex_[peer] + 1;
     }
@@ -229,31 +222,35 @@ void Raft::OnAppendEntriesReply(int peer, const AppendEntriesArgs& args,
     // log[i] has already replicated on peer,
     // duplicate reply takes no effects
     //
-    if (i <= matchIndex_[peer])
+    if (i <= matchIndex_[peer]) {
       break;
+    }
 
     //
     // a leader cannot immediately conclude that a
     // entry from previous term is committed once it is
     // stored on majority of servers, so, just don't count #replica
     //
-    if (log_.TermAt(i) < currentTerm_)
+    if (log_.TermAt(i) < currentTerm_) {
       break;
+    }
     assert(log_.TermAt(i) == currentTerm_);
 
     //
     // logs already committed
     //
-    if (i <= commitIndex_)
+    if (i <= commitIndex_) {
       break;
+    }
 
     //
-    // initial replica is 2, one for id_, one for peer
+    // initial replica is 2, self and peer
     //
     int replica = 2;
     for (int p = 0; p < peerNum_; p++) {
-      if (i <= matchIndex_[p])
+      if (i <= matchIndex_[p]) {
         replica++;
+      }
     }
 
     //
@@ -288,8 +285,7 @@ void Raft::Tick() {
 
 void Raft::DebugOutput() const {
   char buf[128];
-  snprintf(buf, sizeof(buf), "raft[%d] %s, term %d, #votes %d, commit %d", id_,
-           RoleString(), currentTerm_, votesGot_, commitIndex_);
+  snprintf(buf, sizeof(buf), "raft[%d] %s, term %d, #votes %d, commit %d", id_, RoleString(), currentTerm_, votesGot_, commitIndex_);
   LOG_DEBUG << buf;
 }
 
@@ -299,13 +295,11 @@ void Raft::ApplyLog() {
   if (commitIndex_ != lastApplied_) {
     if (lastApplied_ + 1 == commitIndex_) {
       char buf[128];
-      snprintf(buf, sizeof(buf), "raft[%d] %s, term %d, apply log [%d]", id_,
-               RoleString(), currentTerm_, commitIndex_);
+      snprintf(buf, sizeof(buf), "raft[%d] %s, term %d, apply log [%d]", id_, RoleString(), currentTerm_, commitIndex_);
       LOG_DEBUG << buf;
     } else {
       char buf[128];
-      snprintf(buf, sizeof(buf), "raft[%d] %s, term %d, apply log (%d, %d]",
-               id_, RoleString(), currentTerm_, lastApplied_, commitIndex_);
+      snprintf(buf, sizeof(buf), "raft[%d] %s, term %d, apply log (%d, %d]", id_, RoleString(), currentTerm_, lastApplied_, commitIndex_);
       LOG_DEBUG << buf;
     }
   }
@@ -399,6 +393,7 @@ void Raft::OnNewInputTerm(int term) {
 
 void Raft::ResetTimer() {
   timeElapsed_ = 0;
-  if (role_ != kLeader)
+  if (role_ != kLeader) {
     randomizedElectionTimeout_ = randomGen_.Generate();
+  }
 }

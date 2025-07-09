@@ -8,9 +8,7 @@
 using namespace raft;
 
 RaftPeer::RaftPeer(int peer, const muduo::net::InetAddress serverAddress)
-    : peer_(peer),
-      raftAsyncGrpcClient_(
-          std::make_unique<RaftAsyncGrpcClient>(serverAddress.toIpPort())) {}
+    : peer_(peer), raftAsyncGrpcClient_(std::make_unique<RaftAsyncGrpcClient>(serverAddress.toIpPort())) {}
 
 void RaftPeer::Start() {
   AssertInLoop();
@@ -28,11 +26,10 @@ void RaftPeer::RequestVote(const RequestVoteArgs& args) {
   req.set_lastlogindex(args.lastLogIndex);
   req.set_lastlogterm(args.lastLogTerm);
 
-  raftAsyncGrpcClient_->AsyncRequestVote(
-      req, [=](const RequestVoteRsp& response) {
-        RequestVoteReply reply{response.term(), response.votegranted()};
-        requestVoteReply_(peer_, args, reply);
-      });
+  raftAsyncGrpcClient_->AsyncRequestVote(req, [=](const RequestVoteRsp& response) {
+    RequestVoteReply reply{response.term(), response.votegranted()};
+    requestVoteReply_(peer_, args, reply);
+  });
 }
 
 void RaftPeer::AppendEntries(const AppendEntriesArgs& args) {
@@ -49,10 +46,8 @@ void RaftPeer::AppendEntries(const AppendEntriesArgs& args) {
   }
   req.set_leadercommit(args.leaderCommit);
 
-  raftAsyncGrpcClient_->AsyncAppendEntries(
-      req, [=](const AppendEntriesRsp& response) {
-        AppendEntriesReply reply{response.term(), response.success(),
-                                 response.expectindex(), response.expectterm()};
-        appendEntriesReply_(peer_, args, reply);
-      });
+  raftAsyncGrpcClient_->AsyncAppendEntries(req, [=](const AppendEntriesRsp& response) {
+    AppendEntriesReply reply{response.term(), response.success(), response.expectindex(), response.expectterm()};
+    appendEntriesReply_(peer_, args, reply);
+  });
 }

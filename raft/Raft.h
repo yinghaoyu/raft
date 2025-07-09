@@ -43,9 +43,9 @@ class Raft : muduo::noncopyable {
   // Thread safe, return
   // struct ProposeResult
   // {
-  //    int expectIndex;  // the index that the command will appear if it's ever
-  //    committed. int currentTerm;  // current term bool isLeader;    // true
-  //    if this node believes it is the leader
+  //    int expectIndex;  // the index that the command will appear if it's ever committed.
+  //    int currentTerm;  // current term
+  //    bool isLeader;    // true if this node believes it is the leader
   // };
   //
   ProposeResult Propose(const Json::Value& command);
@@ -58,8 +58,7 @@ class Raft : muduo::noncopyable {
   //
   // RequestVote reply callback
   //
-  void OnRequestVoteReply(int peer, const RequestVoteArgs& args,
-                          const RequestVoteReply& reply);
+  void OnRequestVoteReply(int peer, const RequestVoteArgs& args, const RequestVoteReply& reply);
 
   //
   // AppendEntries RPC handler
@@ -69,8 +68,7 @@ class Raft : muduo::noncopyable {
   //
   // AppendEntries reply callback
   //
-  void OnAppendEntriesReply(int peer, const AppendEntriesArgs& args,
-                            const AppendEntriesReply& reply);
+  void OnAppendEntriesReply(int peer, const AppendEntriesArgs& args, const AppendEntriesReply& reply);
 
   //
   // external timer input, the frequency is determined by config.timeUnit
@@ -112,11 +110,7 @@ class Raft : muduo::noncopyable {
 
   void SetVotedFor(int votedFor);
 
-  const char* RoleString() const {
-    return role_ == kLeader     ? "leader"
-           : role_ == kFollower ? "follower"
-                                : "candidate";
-  }
+  const char* RoleString() const { return role_ == kLeader ? "leader" : role_ == kFollower ? "follower" : "candidate"; }
 
  private:
   constexpr static int kVotedForNull = -1;
@@ -131,8 +125,8 @@ class Raft : muduo::noncopyable {
 
   Storage storage_;
   int currentTerm_ = kInitialTerm;  // persistent
-  Role role_ = kFollower;
-  int votedFor_ = kVotedForNull;  // persistent
+  Role role_ = kFollower;           // default as follower
+  int votedFor_ = kVotedForNull;    // persistent
   int votesGot_ = 0;
 
   int commitIndex_ = kInitialCommitIndex;

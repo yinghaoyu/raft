@@ -24,13 +24,9 @@ class RaftPeer : muduo::noncopyable {
 
   void AppendEntries(const AppendEntriesArgs& args);
 
-  void SetRequestVoteReplyCallback(const RequestVoteReplyCallback& cb) {
-    requestVoteReply_ = cb;
-  }
+  void SetRequestVoteReplyCallback(const RequestVoteReplyCallback& cb) { requestVoteReply_ = cb; }
 
-  void SetAppendEntriesReplyCallback(const AppendEntriesReplyCallback& cb) {
-    appendEntriesReply_ = cb;
-  }
+  void SetAppendEntriesReplyCallback(const AppendEntriesReplyCallback& cb) { appendEntriesReply_ = cb; }
 
  private:
   void AssertInLoop() {}

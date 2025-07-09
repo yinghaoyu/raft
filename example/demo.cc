@@ -1,5 +1,3 @@
-
-
 #include <assert.h>
 #include <muduo/base/Logging.h>
 #include <chrono>
@@ -18,7 +16,6 @@ int main(int argc, char** argv) {
     usage();
 
   muduo::Logger::setLogLevel(muduo::Logger::DEBUG);
-  muduo::Logger::setFlushInterval(1);
 
   int id = std::stoi(argv[1]);
 

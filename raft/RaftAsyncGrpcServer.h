@@ -1,8 +1,8 @@
 #include <grpcpp/grpcpp.h>
+#include <muduo/base/Logging.h>
 #include <cassert>
 #include <chrono>
 #include <cstdlib>
-#include <iostream>
 #include <memory>
 #include <string>
 #include <thread>
@@ -33,21 +33,15 @@ class BaseCallData {
 class RequestVoteCallData : public BaseCallData {
  public:
   using AsyncService = message::RaftService::AsyncService;
-  RequestVoteCallData(raft::DoRequestVoteCallback& cb, AsyncService* service,
-                      ServerCompletionQueue* cq)
-      : doRequestVote_(cb),
-        service_(service),
-        cq_(cq),
-        responder_(&ctx_),
-        status_(CREATE) {
+  RequestVoteCallData(raft::DoRequestVoteCallback& cb, AsyncService* service, ServerCompletionQueue* cq)
+      : doRequestVote_(cb), service_(service), cq_(cq), responder_(&ctx_), status_(CREATE) {
     Proceed();
   }
 
   void Proceed() override {
     if (status_ == CREATE) {
       status_ = PROCESS;
-      service_->RequestRequestVote(&ctx_, &request_, &responder_, cq_, cq_,
-                                   this);
+      service_->RequestRequestVote(&ctx_, &request_, &responder_, cq_, cq_, this);
     } else if (status_ == PROCESS) {
       new RequestVoteCallData(doRequestVote_, service_, cq_);
 
@@ -85,21 +79,15 @@ class RequestVoteCallData : public BaseCallData {
 class AppendEntriesCallData : public BaseCallData {
  public:
   using AsyncService = message::RaftService::AsyncService;
-  AppendEntriesCallData(raft::DoAppendEntriesCallback& cb,
-                        AsyncService* service, ServerCompletionQueue* cq)
-      : doAppendEntries_(cb),
-        service_(service),
-        cq_(cq),
-        responder_(&ctx_),
-        status_(CREATE) {
+  AppendEntriesCallData(raft::DoAppendEntriesCallback& cb, AsyncService* service, ServerCompletionQueue* cq)
+      : doAppendEntries_(cb), service_(service), cq_(cq), responder_(&ctx_), status_(CREATE) {
     Proceed();
   }
 
   void Proceed() override {
     if (status_ == CREATE) {
       status_ = PROCESS;
-      service_->RequestAppendEntries(&ctx_, &request_, &responder_, cq_, cq_,
-                                     this);
+      service_->RequestAppendEntries(&ctx_, &request_, &responder_, cq_, cq_, this);
     } else if (status_ == PROCESS) {
       new AppendEntriesCallData(doAppendEntries_, service_, cq_);
 
@@ -158,18 +146,14 @@ class RaftAsyncGrpcServer final {
     builder.RegisterService(&service_);
     cq_ = builder.AddCompletionQueue();
     server_ = builder.BuildAndStart();
-    std::cout << "Server listening on " << server_address << std::endl;
+    LOG_DEBUG << "gRPC Server listening on " << server_address;
 
     HandleRpcs();
   }
 
-  void SetDoRequestVoteCallback(const raft::DoRequestVoteCallback& cb) {
-    doRequestVote_ = cb;
-  }
+  void SetDoRequestVoteCallback(const raft::DoRequestVoteCallback& cb) { doRequestVote_ = cb; }
 
-  void SetDoAppendEntriesCallback(const raft::DoAppendEntriesCallback& cb) {
-    doAppendEntries_ = cb;
-  }
+  void SetDoAppendEntriesCallback(const raft::DoAppendEntriesCallback& cb) { doAppendEntries_ = cb; }
 
  private:
   void HandleRpcs() {
@@ -194,47 +178,3 @@ class RaftAsyncGrpcServer final {
   message::RaftService::AsyncService service_;
   std::unique_ptr<Server> server_;
 };
-
-// #pragma once
-
-// #include "Callback.h"
-// #include "message.grpc.pb.h"
-// #include "message.pb.h"
-
-// #include <grpcpp/grpcpp.h>
-// #include <memory>
-
-// using grpc::Server;
-// using grpc::ServerBuilder;
-// using grpc::ServerContext;
-// using grpc::Status;
-
-// using message::AppendEntriesReq;
-// using message::AppendEntriesRsp;
-// using message::RequestVoteReq;
-// using message::RequestVoteRsp;
-
-// using message::RaftService;
-
-// class RaftServiceImpl final : public RaftService::Service {
-//  public:
-//   RaftServiceImpl();
-//   Status RequestVote(ServerContext* context, const RequestVoteReq* request,
-//                      RequestVoteRsp* response) override;
-
-//   Status AppendEntries(ServerContext* context, const AppendEntriesReq*
-//   request,
-//                        AppendEntriesRsp* response) override;
-
-//   void SetDoRequestVoteCallback(const raft::DoRequestVoteCallback& cb) {
-//     doRequestVote_ = cb;
-//   }
-
-//   void SetDoAppendEntriesCallback(const raft::DoAppendEntriesCallback& cb) {
-//     doAppendEntries_ = cb;
-//   }
-
-//  private:
-//   raft::DoRequestVoteCallback doRequestVote_;
-//   raft::DoAppendEntriesCallback doAppendEntries_;
-// };

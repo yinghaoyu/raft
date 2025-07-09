@@ -45,8 +45,7 @@ class Log : muduo::noncopyable {
   void PutEntryFromJson(const Json::Value& entry);
 
   struct Entry {
-    Entry(int term_, const Json::Value& command_)
-        : term(term_), command(command_) {}
+    Entry(int term_, const Json::Value& command_) : term(term_), command(command_) {}
 
     Entry() : term(0), command(Json::nullValue) {}
 

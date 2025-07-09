@@ -49,8 +49,7 @@ struct IndexAndTerm {
 };
 
 struct ApplyMsg {
-  ApplyMsg(int index_, const Json::Value& command_)
-      : index(index_), command(command_) {}
+  ApplyMsg(int index_, const Json::Value& command_) : index(index_), command(command_) {}
 
   int index;
   Json::Value command;

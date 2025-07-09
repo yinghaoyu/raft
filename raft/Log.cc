@@ -4,10 +4,7 @@
 
 using namespace raft;
 
-Log::Log(Storage* storage)
-    : storage_(storage),
-      firstIndex_(storage->GetFirstIndex()),
-      lastIndex_(storage->GetLastIndex()) {
+Log::Log(Storage* storage) : storage_(storage), firstIndex_(storage->GetFirstIndex()), lastIndex_(storage->GetLastIndex()) {
   assert(firstIndex_ <= lastIndex_);
   size_t entryNum = lastIndex_ - firstIndex_ + 1;
   log_.reserve(entryNum);
